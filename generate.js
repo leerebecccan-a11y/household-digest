@@ -79,7 +79,41 @@ async function getMeals() {
   }
   return meals;
 }
+async function getNews() {
+  const feeds = [
+    { name: 'AP News', url: 'https://feeds.apnews.com/rss/apf-topnews' },
+    { name: 'NPR', url: 'https://feeds.npr.org/1001/rss.xml' },
+    { name: 'BBC News', url: 'http://feeds.bbci.co.uk/news/rss.xml' }
+  ];
 
+  const articles = [];
+  for (const feed of feeds) {
+    try {
+      const res = await fetch(feed.url, {
+        headers: { 'User-Agent': 'Mozilla/5.0' }
+      });
+      const xml = await res.text();
+      const items = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
+      if (items.length > 0) {
+        const item = items[0];
+        const title = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1]
+          || item.match(/<title>(.*?)<\/title>/)?.[1]
+          || 'Latest news';
+        const link = item.match(/<link>(.*?)<\/link>/)?.[1]
+          || item.match(/<guid[^>]*>(https?:\/\/[^<]+)<\/guid>/)?.[1]
+          || '#';
+        articles.push({
+          source: feed.name,
+          title: title.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim(),
+          url: link.trim()
+        });
+      }
+    } catch(e) {
+      console.log(`RSS fetch failed for ${feed.name}:`, e.message);
+    }
+  }
+  return articles;
+}
 async function getClaudeContent(meals, weather) {
   const mealText = meals.length > 0 ? meals.map(m => m.name).join(' + ') : 'nothing planned';
   try {
@@ -117,7 +151,7 @@ Return ONLY a JSON object, no markdown fences, no extra text:
 
 // ── HTML builder ──────────────────────────────────────────────────────────────
 
-function buildHtml(weather, chores, meals, claude) {
+function buildHtml(weather, chores, meals, news, claude) {
   const byRoom = {};
   for (const c of chores) {
     const room = c.room.replace(/\p{Emoji}/gu, '').trim() || 'General';
@@ -156,6 +190,8 @@ function buildHtml(weather, chores, meals, claude) {
   --umber:#8B6148;--bark:#5C3D2E;--sage:#7A9E7E;--sp:#EAF2EB;
   --forest:#4A7C5F;--fp:#E6F0EB;
   --ink:#2C2018;--is:#8C7A6A;--im:#B5A898;--div:rgba(92,61,46,0.12)
+  .nhed{font-size:13px;color:var(--ink);line-height:1.4;text-decoration:none}
+  .nhed:hover{text-decoration:underline;color:var(--terracotta)}
 }
 body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);padding-bottom:2rem}
 .header{background:var(--bark);padding:1.5rem 1.25rem 1.25rem;overflow:hidden;position:relative}
@@ -263,18 +299,21 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);padd
   </div>
 
   <div class="section">
-    <div class="sl" style="margin-bottom:.6rem">Morning headlines</div>
-    <div class="card">
-      <div class="ni"><div class="nsrc">Associated Press</div><div class="nhed">Top national and world headlines for today</div></div>
-      <div class="ni"><div class="nsrc">Reuters</div><div class="nhed">Markets and economic news</div></div>
-      <div class="ni"><div class="nsrc">BBC News</div><div class="nhed">International headlines and top stories</div></div>
+      <div class="sl" style="margin-bottom:.6rem">Morning headlines</div>
+      <div class="card">
+        ${news.length > 0 ? news.map(a => `
+          <div class="ni">
+            <div class="nsrc">${a.source}</div>
+            <a class="nhed" href="${a.url}" target="_blank" rel="noopener">${a.title}</a>
+          </div>`).join('') : `
+          <div class="ni"><div class="nsrc">News</div><div class="nhed">Headlines unavailable — check back later</div></div>`}
+      </div>
+      <div class="rcard">
+        <div class="reyebrow">Today's read</div>
+        <div class="rtitle">"${claude.newsletterTitle}"</div>
+        <div class="rbody">${claude.newsletterSummary}</div>
+      </div>
     </div>
-    <div class="rcard">
-      <div class="reyebrow">Today's read</div>
-      <div class="rtitle">"${claude.newsletterTitle}"</div>
-      <div class="rbody">${claude.newsletterSummary}</div>
-    </div>
-  </div>
 
 </div>
 
@@ -302,11 +341,12 @@ function triggerRebuild() {
 
 async function main() {
   console.log(`Generating digest for ${todayDay}...`);
-  const [weather, chores, meals] = await Promise.all([
-    getWeather(), getChores(), getMeals()
+  const [weather, chores, meals, news] = await Promise.all([
+    getWeather(), getChores(), getMeals(), getNews()
   ]);
+  console.log(`Weather: ${weather.temp}°, Chores: ${chores.length}, Meals: ${meals.length}, News: ${news.length}`);
   const claude = await getClaudeContent(meals, weather);
-  const html = buildHtml(weather, chores, meals, claude);
+  const html = buildHtml(weather, chores, meals, news, claude);
   fs.mkdirSync('./out', { recursive: true });
   fs.writeFileSync('./out/index.html', html);
   console.log('Done.');
