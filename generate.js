@@ -41,7 +41,7 @@ async function getWeather() {
 }
 
 async function getChores() {
-  const res = await fetch('https://api.notion.com/v1/databases/9db5db27c5f242d29e3953a0f19e45bf/query', {
+  const res = await fetch('https://api.notion.com/v1/databases/9db5db27-c5f2-42d2-9e39-53a0f19e45bf/query', {
     method: 'POST',
     headers: NOTION_HEADERS,
     body: JSON.stringify({
