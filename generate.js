@@ -114,6 +114,49 @@ async function getNews() {
   }
   return articles;
 }
+async function getSubstack() {
+  const substacks = [
+    { name: 'The Examined Life', url: 'https://examinedlife.substack.com/feed' },
+    { name: 'Vittles', url: 'https://vittles.substack.com/feed' },
+    { name: 'Dirt', url: 'https://dirt.substack.com/feed' },
+    { name: 'The Isolation Journals', url: 'https://isolationjournals.substack.com/feed' },
+    { name: 'Perfectly Imperfect', url: 'https://perfectlyimperfect.substack.com/feed' }
+  ];
+
+  // Rotate through substacks based on day of week so it varies daily
+  const feed = substacks[today.getDay() % substacks.length];
+
+  try {
+    const res = await fetch(feed.url, { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const xml = await res.text();
+    const items = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
+    if (items.length === 0) return null;
+
+    const item = items[0];
+    const title = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/)?.[1]
+      || item.match(/<title>(.*?)<\/title>/)?.[1]
+      || '';
+    const link = item.match(/<link>(.*?)<\/link>/)?.[1]
+      || item.match(/<guid[^>]*>(https?:\/\/[^<]+)<\/guid>/)?.[1]
+      || '#';
+    const description = item.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/)?.[1]
+      || item.match(/<description>(.*?)<\/description>/)?.[1]
+      || '';
+
+    // Strip HTML tags from description and truncate
+    const cleanDesc = description.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').trim().slice(0, 200);
+
+    return {
+      publication: feed.name,
+      title: title.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim(),
+      url: link.trim(),
+      summary: cleanDesc ? cleanDesc + '...' : null
+    };
+  } catch(e) {
+    console.log('Substack fetch failed:', e.message);
+    return null;
+  }
+}
 async function getClaudeContent(meals, weather) {
   const mealText = meals.length > 0 ? meals.map(m => m.name).join(' + ') : 'nothing planned';
   try {
@@ -151,7 +194,7 @@ Return ONLY a JSON object, no markdown fences, no extra text:
 
 // ── HTML builder ──────────────────────────────────────────────────────────────
 
-function buildHtml(weather, chores, meals, news, claude) {
+function buildHtml(weather, chores, meals, news, substack, claude) {
   const byRoom = {};
   for (const c of chores) {
     const room = c.room.replace(/\p{Emoji}/gu, '').trim() || 'General';
@@ -231,11 +274,14 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);padd
 .ni:last-child{border-bottom:none;padding-bottom:0}
 .ni:first-child{padding-top:0}
 .nsrc{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--terracotta);margin-bottom:3px}
-.nhed{font-size:13px;color:var(--ink);line-height:1.4}
+.nhed{font-size:13px;color:var(--ink);line-height:1.4;text-decoration:none}
+.nhed:hover{text-decoration:underline;color:var(--terracotta)}
 .rcard{background:var(--fp);border:.5px solid rgba(74,124,95,.2);border-radius:14px;padding:1rem 1.125rem;margin-top:.5rem}
 .reyebrow{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--forest);margin-bottom:5px}
 .rtitle{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--bark);line-height:1.35;margin-bottom:5px}
 .rbody{font-size:12px;color:var(--is);line-height:1.5;font-weight:300}
+.rtitle{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--bark);line-height:1.35;margin-bottom:5px;text-decoration:none;display:block}
+.rtitle:hover{text-decoration:underline}
 .refresh-btn{display:block;width:calc(100% - 2rem);margin:1.25rem 1rem 0;background:var(--bark);color:#FDF9F4;border:none;border-radius:12px;padding:14px;font-family:'Lato',sans-serif;font-size:13px;font-weight:400;letter-spacing:.5px;cursor:pointer;transition:opacity .2s}
 .refresh-btn:active{opacity:.8}
 .refresh-btn.loading{opacity:.6;cursor:not-allowed}
@@ -298,22 +344,29 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);padd
     </div>
   </div>
 
-  <div class="section">
-      <div class="sl" style="margin-bottom:.6rem">Morning headlines</div>
-      <div class="card">
-        ${news.length > 0 ? news.map(a => `
-          <div class="ni">
-            <div class="nsrc">${a.source}</div>
-            <a class="nhed" href="${a.url}" target="_blank" rel="noopener">${a.title}</a>
-          </div>`).join('') : `
-          <div class="ni"><div class="nsrc">News</div><div class="nhed">Headlines unavailable — check back later</div></div>`}
-      </div>
-      <div class="rcard">
-        <div class="reyebrow">Today's read</div>
-        <div class="rtitle">"${claude.newsletterTitle}"</div>
-        <div class="rbody">${claude.newsletterSummary}</div>
-      </div>
+<div class="section">
+    <div class="sl" style="margin-bottom:.6rem">Morning headlines</div>
+    <div class="card">
+      ${news.length > 0 ? news.map(a => `
+        <div class="ni">
+          <div class="nsrc">${a.source}</div>
+          <a class="nhed" href="${a.url}" target="_blank" rel="noopener">${a.title}</a>
+        </div>`).join('') : `
+        <div class="ni"><div class="nsrc">News</div><div class="nhed">Headlines unavailable — check back later</div></div>`}
     </div>
+    ${substack ? `
+    <div class="rcard">
+      <div class="reyebrow">Today's read · ${substack.publication}</div>
+      <a class="rtitle" href="${substack.url}" target="_blank" rel="noopener">"${substack.title}"</a>
+      <div class="rbody">${substack.summary || claude.newsletterSummary}</div>
+      <a href="${substack.url}" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--forest);text-decoration:none">Read article ↗</a>
+    </div>` : `
+    <div class="rcard">
+      <div class="reyebrow">Today's read</div>
+      <div class="rtitle">"${claude.newsletterTitle}"</div>
+      <div class="rbody">${claude.newsletterSummary}</div>
+    </div>`}
+  </div>
 
 </div>
 
@@ -341,12 +394,12 @@ function triggerRebuild() {
 
 async function main() {
   console.log(`Generating digest for ${todayDay}...`);
-  const [weather, chores, meals, news] = await Promise.all([
-    getWeather(), getChores(), getMeals(), getNews()
+  const [weather, chores, meals, news, substack] = await Promise.all([
+    getWeather(), getChores(), getMeals(), getNews(), getSubstack()
   ]);
-  console.log(`Weather: ${weather.temp}°, Chores: ${chores.length}, Meals: ${meals.length}, News: ${news.length}`);
+  console.log(`Weather: ${weather.temp}°, Chores: ${chores.length}, Meals: ${meals.length}, News: ${news.length}, Substack: ${substack?.title || 'none'}`);
   const claude = await getClaudeContent(meals, weather);
-  const html = buildHtml(weather, chores, meals, news, claude);
+  const html = buildHtml(weather, chores, meals, news, substack, claude);
   fs.mkdirSync('./out', { recursive: true });
   fs.writeFileSync('./out/index.html', html);
   console.log('Done.');
