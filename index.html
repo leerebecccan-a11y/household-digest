@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Household Digest · Thursday</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --cream:#FAF7F2;--warm-white:#FDF9F4;--sand:#E8DDD0;
+  --terracotta:#C4714A;--tl:#E8A882;--tp:#F5E6DC;
+  --umber:#8B6148;--bark:#5C3D2E;--sage:#7A9E7E;--sp:#EAF2EB;
+  --forest:#4A7C5F;--fp:#E6F0EB;
+  --ink:#2C2018;--is:#8C7A6A;--im:#B5A898;--div:rgba(92,61,46,0.12)
+}
+body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);padding-bottom:2rem}
+.header{background:var(--bark);padding:1.5rem 1.25rem 1.25rem;overflow:hidden;position:relative}
+.header::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,0.04)}
+.htop{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.75rem}
+.greeting{font-family:'Playfair Display',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--tl);margin-bottom:4px}
+.day{font-family:'Playfair Display',serif;font-size:26px;font-weight:500;color:#FDF9F4;line-height:1.1}
+.dsub{font-size:12px;font-weight:300;color:rgba(253,249,244,0.55);margin-top:3px}
+.wb{text-align:right}
+.wtemp{font-family:'Playfair Display',serif;font-size:36px;font-weight:400;color:#FDF9F4;line-height:1}
+.wdesc{font-size:11px;font-weight:300;color:rgba(253,249,244,0.6);margin-top:2px;text-transform:capitalize}
+.wloc{font-size:10px;color:rgba(253,249,244,0.4);margin-top:1px}
+.wstrip{display:flex;gap:6px;flex-wrap:wrap;margin-top:.75rem}
+.wpill{background:rgba(255,255,255,0.08);border:.5px solid rgba(255,255,255,0.12);border-radius:20px;padding:4px 10px;font-size:10px;color:rgba(253,249,244,0.7);font-weight:300}
+.wpill span{color:var(--tl);font-weight:400}
+.content{padding:0 1rem}
+.section{margin-top:1.25rem}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem}
+.sl{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--im);padding-left:2px}
+.nl{font-size:10px;color:var(--terracotta);text-decoration:none}
+.card{background:var(--warm-white);border:.5px solid var(--sand);border-radius:14px;padding:1rem 1.125rem}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--sage);background:var(--sp);border-radius:10px;padding:3px 8px}
+.bdot{width:5px;height:5px;border-radius:50%;background:var(--sage);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.notion-embed{width:100%;height:600px;border:none;border-radius:14px}
+.meal-card{background:var(--tp);border:.5px solid rgba(196,113,74,.2);border-radius:14px;padding:1rem 1.125rem}
+.meyebrow{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--terracotta);margin-bottom:4px}
+.meal-name{font-family:'Playfair Display',serif;font-size:20px;font-weight:500;color:var(--bark);line-height:1.2;margin-bottom:6px}
+.meal-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.meal-tag{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:8px;background:rgba(196,113,74,.15);color:var(--umber)}
+.meal-empty{font-size:13px;color:var(--umber);font-style:italic}
+.meal-empty a{color:var(--terracotta)}
+.reminder-banner{background:var(--bark);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:8px}
+.rdot{width:6px;height:6px;border-radius:50%;background:var(--tl);flex-shrink:0;animation:pulse 2s infinite}
+.rtext{font-size:11px;color:rgba(253,249,244,.85);font-weight:300;line-height:1.4}
+.ni{padding:8px 0;border-bottom:.5px solid var(--div)}
+.ni:last-child{border-bottom:none;padding-bottom:0}
+.ni:first-child{padding-top:0}
+.nsrc{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--terracotta);margin-bottom:3px}
+.nhed{font-size:13px;color:var(--ink);line-height:1.4}
+.rcard{background:var(--fp);border:.5px solid rgba(74,124,95,.2);border-radius:14px;padding:1rem 1.125rem;margin-top:.5rem}
+.reyebrow{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--forest);margin-bottom:5px}
+.rtitle{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--bark);line-height:1.35;margin-bottom:5px}
+.rbody{font-size:12px;color:var(--is);line-height:1.5;font-weight:300}
+.refresh-btn{display:block;width:calc(100% - 2rem);margin:1.25rem 1rem 0;background:var(--bark);color:#FDF9F4;border:none;border-radius:12px;padding:14px;font-family:'Lato',sans-serif;font-size:13px;font-weight:400;letter-spacing:.5px;cursor:pointer;transition:opacity .2s}
+.refresh-btn:active{opacity:.8}
+.refresh-btn.loading{opacity:.6;cursor:not-allowed}
+.footer{margin-top:1rem;padding:0 1rem;text-align:center;font-size:10px;color:var(--im);font-weight:300}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="htop">
+    <div>
+      <div class="greeting">Good morning, Bec & Nic</div>
+      <div class="day">Thursday</div>
+      <div class="dsub">Thursday, April 23, 2026</div>
+    </div>
+    <div class="wb">
+      <div class="wtemp">59°</div>
+      <div class="wdesc">broken clouds</div>
+      <div class="wloc">Alfred, Maine</div>
+    </div>
+  </div>
+  <div class="wstrip">
+    <div class="wpill">High <span>61°</span></div>
+    <div class="wpill">Low <span>56°</span></div>
+    <div class="wpill">Wind <span>12mph</span></div>
+    <div class="wpill">Humidity <span>31%</span></div>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="section">
+    <div class="sh">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="sl">Chores · Thursday</div>
+        <div class="badge"><div class="bdot"></div>Live Notion</div>
+      </div>
+      <a class="nl" href="https://www.notion.so/Weekly-Cleaning-Checklist-343dceb70b9f801b86abffe4b092a172" target="_blank">Open ↗</a>
+    </div>
+    <iframe
+      class="notion-embed"
+      src="https://honored-tangerine-e9d.notion.site/Weekly-Cleaning-Checklist-343dceb70b9f801b86abffe4b092a172"
+      allowfullscreen>
+    </iframe>
+  </div>
+
+  <div class="section">
+    <div class="sh">
+      <div class="sl">Dinner tonight</div>
+      <a class="nl" href="https://www.notion.so/Weekly-meal-planner-24fdceb70b9f801c8f01fb06b7c93b5b" target="_blank">Open ↗</a>
+    </div>
+    <div class="meal-card">
+      <div class="meyebrow">From your Notion meal plan</div>
+      <div class="meal-name">Roasted Potatoes + Beef Pan</div>
+       <div class="meal-tags"></div>
+       <div class="reminder-banner"><div class="rdot"></div><div class="rtext">Start your prep around 5:15pm so you can have a warm, comforting dinner on the table by 6:30pm.</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="sl" style="margin-bottom:.6rem">Morning headlines</div>
+    <div class="card">
+      <div class="ni"><div class="nsrc">Associated Press</div><div class="nhed">Top national and world headlines for today</div></div>
+      <div class="ni"><div class="nsrc">Reuters</div><div class="nhed">Markets and economic news</div></div>
+      <div class="ni"><div class="nsrc">BBC News</div><div class="nhed">International headlines and top stories</div></div>
+    </div>
+    <div class="rcard">
+      <div class="reyebrow">Today's read</div>
+      <div class="rtitle">"The Science Behind Why Cast Iron Pan-Searing Creates the Perfect Crust"</div>
+      <div class="rbody">Since you're making beef pan tonight, you'll love learning the Maillard reaction magic that turns a simple cut into something restaurant-worthy. It's the kind of kitchen wisdom that makes every meal feel a little more intentional and delicious.</div>
+    </div>
+  </div>
+
+</div>
+
+<button class="refresh-btn" id="refreshBtn" onclick="triggerRebuild()">
+  Refresh digest
+</button>
+
+<div class="footer" id="footer">Auto-generated at 6am · Thursday, April 23, 2026</div>
+
+<script>
+function triggerRebuild() {
+  const btn = document.getElementById('refreshBtn');
+  btn.textContent = 'Opening GitHub Actions...';
+  window.open('https://github.com/leerebeccaan-a11y/household-digest/actions/workflows/daily-digest.yml', '_blank');
+  setTimeout(() => {
+    btn.textContent = 'Refresh digest';
+  }, 2000);
+}
+</script>
+</body>
+</html>
