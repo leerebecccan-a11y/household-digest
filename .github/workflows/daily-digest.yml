@@ -2,8 +2,10 @@ name: Daily Household Digest
 
 on:
   schedule:
-    - cron: '0 10 * * *'
+    - cron: '0 06 * * *'
   workflow_dispatch:
+  repository_dispatch:
+    types: [manual-refresh]
 
 jobs:
   build:
@@ -26,6 +28,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: node generate.js
 
       - name: Deploy
