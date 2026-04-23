@@ -4,7 +4,6 @@ import fs from 'fs';
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const WEATHER_KEY = process.env.OPENWEATHER_API_KEY;
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
-const GH_PAT = process.env.GH_PAT;
 const GH_REPO = 'leerebeccaan-a11y/household-digest';
 
 const NOTION_HEADERS = {
