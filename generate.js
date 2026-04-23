@@ -100,7 +100,24 @@ Return ONLY a JSON object, no markdown fences, no extra text:
 
 // ── HTML builder ──────────────────────────────────────────────────────────────
 
-function buildHtml(weather, meals, claude) {
+function buildHtml(weather, chores, meals, claude) {
+  const byRoom = {};
+  for (const c of chores) {
+    const room = c.room.replace(/\p{Emoji}/gu, '').trim() || 'General';
+    if (!byRoom[room]) byRoom[room] = [];
+    byRoom[room].push(c);
+  }
+  const choreHtml = Object.entries(byRoom).map(([room, tasks]) => `
+    <div class="room-label">${room}</div>
+    ${tasks.map(t => `
+      <div class="chore-row${t.done ? ' done' : ''}">
+        <div class="chore-check"></div>
+        <div class="chore-text">${t.task}</div>
+      </div>`).join('')}
+  `).join('');
+  const total = chores.length;
+  const doneCount = chores.filter(c => c.done).length;
+  const pct = total > 0 ? Math.round(doneCount / total * 100) : 0;
   const mealHtml = meals.length > 0
     ? `<div class="meal-name">${meals.map(m => m.name).join(' + ')}</div>
        <div class="meal-tags">${[...new Set(meals.flatMap(m => m.tags))].slice(0,4).map(t => `<span class="meal-tag">${t}</span>`).join('')}</div>
@@ -205,11 +222,16 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);padd
       </div>
       <a class="nl" href="https://www.notion.so/Weekly-Cleaning-Checklist-343dceb70b9f801b86abffe4b092a172" target="_blank">Open ↗</a>
     </div>
-    <iframe
-      class="notion-embed"
-      src="https://honored-tangerine-e9d.notion.site/Weekly-Cleaning-Checklist-343dceb70b9f801b86abffe4b092a172"
-      allowfullscreen>
-    </iframe>
+    ${total > 0 ? `
+    <div class="card">
+      ${choreHtml}
+      <div class="prog"><div class="progbar" id="bar" style="width:${pct}%"></div></div>
+      <div class="pfoot">
+        <div class="plbl" id="lbl">${doneCount} of ${total} complete</div>
+        <div style="font-size:9px;color:var(--im);font-style:italic">check off in Notion, then refresh</div>
+      </div>
+    </div>` : `
+    <div class="card"><p style="font-size:13px;color:var(--im);font-style:italic">No chores today — enjoy your day!</p></div>`}
   </div>
 
   <div class="section">
@@ -263,10 +285,11 @@ function triggerRebuild() {
 
 async function main() {
   console.log(`Generating digest for ${todayDay}...`);
-  const [weather, meals] = await Promise.all([getWeather(), getMeals()]);
-  console.log(`Weather: ${weather.temp}°, Meals: ${meals.length}`);
+  const [weather, chores, meals] = await Promise.all([
+    getWeather(), getChores(), getMeals()
+  ]);
   const claude = await getClaudeContent(meals, weather);
-  const html = buildHtml(weather, meals, claude);
+  const html = buildHtml(weather, chores, meals, claude);
   fs.mkdirSync('./out', { recursive: true });
   fs.writeFileSync('./out/index.html', html);
   console.log('Done.');
