@@ -40,6 +40,23 @@ async function getWeather() {
   }
 }
 
+async function getChores() {
+  const res = await fetch('https://api.notion.com/v1/databases/9db5db27c5f242d29e3953a0f19e45bf/query', {
+    method: 'POST',
+    headers: NOTION_HEADERS,
+    body: JSON.stringify({
+      filter: { property: 'Day', select: { equals: todayDay } }
+    })
+  });
+  const data = await res.json();
+  if (!data.results) throw new Error('Notion chores failed: ' + JSON.stringify(data));
+  return data.results.map(p => ({
+    id: p.id,
+    task: p.properties.Task?.title?.[0]?.plain_text || '',
+    room: p.properties.Room?.select?.name || '',
+    done: p.properties.Done?.checkbox || false
+  })).filter(c => c.task);
+}
 async function getMeals() {
   const res = await fetch('https://api.notion.com/v1/databases/24fdceb70b9f813db6a1c6b878d17553/query', {
     method: 'POST',
