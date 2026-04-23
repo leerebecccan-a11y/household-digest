@@ -247,33 +247,13 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);padd
 <div class="footer" id="footer">Auto-generated at 6am · ${dateStr}</div>
 
 <script>
-async function triggerRebuild() {
+function triggerRebuild() {
   const btn = document.getElementById('refreshBtn');
-  const footer = document.getElementById('footer');
-  btn.textContent = 'Rebuilding — check back in ~60 seconds...';
-  btn.classList.add('loading');
-  btn.disabled = true;
-  try {
-    const res = await fetch('https://api.github.com/repos/${GH_REPO}/dispatches', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ${GH_PAT}',
-        'Accept': 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ event_type: 'manual-refresh' })
-    });
-    if (res.ok) {
-      footer.textContent = 'Rebuild triggered — refresh this page in about 60 seconds';
-    } else {
-      throw new Error('Failed');
-    }
-  } catch {
+  btn.textContent = 'Opening GitHub Actions...';
+  window.open('https://github.com/${GH_REPO}/actions/workflows/daily-digest.yml', '_blank');
+  setTimeout(() => {
     btn.textContent = 'Refresh digest';
-    btn.classList.remove('loading');
-    btn.disabled = false;
-    footer.textContent = 'Refresh failed — try again or visit GitHub Actions';
-  }
+  }, 2000);
 }
 </script>
 </body>
