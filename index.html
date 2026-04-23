@@ -54,11 +54,14 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);padd
 .ni:last-child{border-bottom:none;padding-bottom:0}
 .ni:first-child{padding-top:0}
 .nsrc{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--terracotta);margin-bottom:3px}
-.nhed{font-size:13px;color:var(--ink);line-height:1.4}
+.nhed{font-size:13px;color:var(--ink);line-height:1.4;text-decoration:none}
+.nhed:hover{text-decoration:underline;color:var(--terracotta)}
 .rcard{background:var(--fp);border:.5px solid rgba(74,124,95,.2);border-radius:14px;padding:1rem 1.125rem;margin-top:.5rem}
 .reyebrow{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--forest);margin-bottom:5px}
 .rtitle{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--bark);line-height:1.35;margin-bottom:5px}
 .rbody{font-size:12px;color:var(--is);line-height:1.5;font-weight:300}
+.rtitle{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--bark);line-height:1.35;margin-bottom:5px;text-decoration:none;display:block}
+.rtitle:hover{text-decoration:underline}
 .refresh-btn{display:block;width:calc(100% - 2rem);margin:1.25rem 1rem 0;background:var(--bark);color:#FDF9F4;border:none;border-radius:12px;padding:14px;font-family:'Lato',sans-serif;font-size:13px;font-weight:400;letter-spacing:.5px;cursor:pointer;transition:opacity .2s}
 .refresh-btn:active{opacity:.8}
 .refresh-btn.loading{opacity:.6;cursor:not-allowed}
@@ -84,7 +87,7 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);padd
     <div class="wpill">High <span>61°</span></div>
     <div class="wpill">Low <span>56°</span></div>
     <div class="wpill">Wind <span>15mph</span></div>
-    <div class="wpill">Humidity <span>23%</span></div>
+    <div class="wpill">Humidity <span>28%</span></div>
   </div>
 </div>
 
@@ -161,29 +164,30 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);padd
       <div class="meyebrow">From your Notion meal plan</div>
       <div class="meal-name">Roasted Potatoes + Beef Pan</div>
        <div class="meal-tags"></div>
-       <div class="reminder-banner"><div class="rdot"></div><div class="rtext">Start your prep around 5:15pm so you can have this hearty beef and potato dinner on the table by 6:30pm.</div></div>
+       <div class="reminder-banner"><div class="rdot"></div><div class="rtext">Start your prep around 5:15pm so you can have a warm, hearty dinner on the table by 6:30pm.</div></div>
     </div>
   </div>
 
-  <div class="section">
-      <div class="sl" style="margin-bottom:.6rem">Morning headlines</div>
-      <div class="card">
-        
-          <div class="ni">
-            <div class="nsrc">NPR</div>
-            <a class="nhed" href="https://www.npr.org/2026/04/23/nx-s1-5797402/author-details-the-spy-network-that-took-on-americas-post-wwii-nazi-groups" target="_blank" rel="noopener">Author details the spy network that took on America&apos;s post-WWII Nazi groups</a>
-          </div>
-          <div class="ni">
-            <div class="nsrc">BBC News</div>
-            <a class="nhed" href="https://www.bbc.com/news/articles/cx2wdegnzzjo?at_medium=RSS&amp;at_campaign=rss" target="_blank" rel="noopener">Trump tells BBC that King's visit could 'absolutely' help repair relations with UK</a>
-          </div>
-      </div>
-      <div class="rcard">
-        <div class="reyebrow">Today's read</div>
-        <div class="rtitle">"The Art of the Cast Iron Pan: Why Your Great-Grandmother's Cookware Still Reigns Supreme"</div>
-        <div class="rbody">Cast iron isn't just nostalgic—it's a practical tool that actually improves your cooking and lasts generations, especially perfect for searing beef like you're making tonight. You might be surprised to learn that properly seasoned cast iron is naturally non-stick and gets better with age, making it an investment piece for your kitchen.</div>
-      </div>
+<div class="section">
+    <div class="sl" style="margin-bottom:.6rem">Morning headlines</div>
+    <div class="card">
+      
+        <div class="ni">
+          <div class="nsrc">NPR</div>
+          <a class="nhed" href="https://www.npr.org/2026/04/23/nx-s1-5797402/author-details-the-spy-network-that-took-on-americas-post-wwii-nazi-groups" target="_blank" rel="noopener">Author details the spy network that took on America&apos;s post-WWII Nazi groups</a>
+        </div>
+        <div class="ni">
+          <div class="nsrc">BBC News</div>
+          <a class="nhed" href="https://www.bbc.com/news/articles/cx2wdegnzzjo?at_medium=RSS&amp;at_campaign=rss" target="_blank" rel="noopener">Trump tells BBC that King's visit could 'absolutely' help repair relations with UK</a>
+        </div>
     </div>
+    
+    <div class="rcard">
+      <div class="reyebrow">Today's read</div>
+      <div class="rtitle">"Why Root Vegetables Rule the Fall Table: The Science Behind Roasted Potato Perfection"</div>
+      <div class="rbody">As you're roasting potatoes tonight, you'll appreciate learning how the Maillard reaction creates that golden, crispy exterior we all crave. This cozy read celebrates the humble potato and explains why it's the perfect companion to a seared beef pan, especially as the evening cools down to 58 degrees.</div>
+    </div>
+  </div>
 
 </div>
 
