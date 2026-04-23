@@ -1,5 +1,5 @@
 cat << 'EOF'
-name: Daily Household Digest
+name: Daily_Household_Digest
 
 on:
   schedule:
