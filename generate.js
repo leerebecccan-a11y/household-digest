@@ -4,6 +4,8 @@ import fs from 'fs';
 const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const WEATHER_KEY = process.env.OPENWEATHER_API_KEY;
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
+const GH_PAT = process.env.GH_PAT;
+const GH_REPO = 'leerebeccaan-a11y/household-digest';
 
 const NOTION_HEADERS = {
   'Authorization': `Bearer ${NOTION_TOKEN}`,
@@ -21,36 +23,22 @@ const dateStr = today.toLocaleDateString('en-US', {
 // ── Data fetchers ─────────────────────────────────────────────────────────────
 
 async function getWeather() {
-  const url = `https://api.openweathermap.org/data/2.5/weather?q=Alfred,ME,US&appid=${WEATHER_KEY}&units=imperial`;
-  const res = await fetch(url);
-  const d = await res.json();
-  if (!d.main) throw new Error('Weather API failed: ' + JSON.stringify(d));
-  return {
-    temp: Math.round(d.main.temp),
-    high: Math.round(d.main.temp_max),
-    low: Math.round(d.main.temp_min),
-    desc: d.weather[0].description,
-    humidity: d.main.humidity,
-    wind: Math.round(d.wind.speed)
-  };
-}
-
-async function getChores() {
-  const res = await fetch('https://api.notion.com/v1/databases/9db5db27c5f242d29e3953a0f19e45bf/query', {
-    method: 'POST',
-    headers: NOTION_HEADERS,
-    body: JSON.stringify({
-      filter: { property: 'Day', select: { equals: todayDay } }
-    })
-  });
-  const data = await res.json();
-  if (!data.results) throw new Error('Notion chores failed: ' + JSON.stringify(data));
-  return data.results.map(p => ({
-    id: p.id,
-    task: p.properties.Task?.title?.[0]?.plain_text || '',
-    room: p.properties.Room?.select?.name || '',
-    done: p.properties.Done?.checkbox || false
-  })).filter(c => c.task);
+  try {
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=Alfred,ME,US&appid=${WEATHER_KEY}&units=imperial`;
+    const res = await fetch(url);
+    const d = await res.json();
+    if (!d.main) throw new Error('Bad response');
+    return {
+      temp: Math.round(d.main.temp),
+      high: Math.round(d.main.temp_max),
+      low: Math.round(d.main.temp_min),
+      desc: d.weather[0].description,
+      humidity: d.main.humidity,
+      wind: Math.round(d.wind.speed)
+    };
+  } catch {
+    return { temp: '--', high: '--', low: '--', desc: 'unavailable', humidity: '--', wind: '--' };
+  }
 }
 
 async function getMeals() {
@@ -64,7 +52,6 @@ async function getMeals() {
   const data = await res.json();
   const dayRow = data.results?.[0];
   if (!dayRow) return [];
-
   const relations = dayRow.properties.Meals?.relation || [];
   const meals = [];
   for (const rel of relations) {
@@ -79,32 +66,29 @@ async function getMeals() {
 
 async function getClaudeContent(meals, weather) {
   const mealText = meals.length > 0 ? meals.map(m => m.name).join(' + ') : 'nothing planned';
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 600,
-      system: `You write a warm household digest for Bec and Nic in Alfred, Maine. 
-Return ONLY a JSON object with no markdown fences and no extra text:
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 600,
+        system: `You write a warm household digest for Bec and Nic in Alfred, Maine.
+Return ONLY a JSON object, no markdown fences, no extra text:
 {
   "prepNote": "one warm sentence about when to start dinner prep to eat by 6:30pm",
   "newsletterTitle": "title of an interesting article about outdoors, cooking, nature, or fascinating facts",
   "newsletterSummary": "two warm sentences summarizing why they would enjoy it"
 }`,
-      messages: [{
-        role: 'user',
-        content: `Today is ${todayDay}. Dinner: ${mealText}. Weather: ${weather.desc}, ${weather.temp}F.`
-      }]
-    })
-  });
-  const d = await res.json();
-  const text = d.content?.[0]?.text || '{}';
-  try {
+        messages: [{ role: 'user', content: `Today is ${todayDay}. Dinner: ${mealText}. Weather: ${weather.desc}, ${weather.temp}F.` }]
+      })
+    });
+    const d = await res.json();
+    const text = d.content?.[0]?.text || '{}';
     return JSON.parse(text.replace(/```json|```/g, '').trim());
   } catch {
     return {
@@ -117,27 +101,7 @@ Return ONLY a JSON object with no markdown fences and no extra text:
 
 // ── HTML builder ──────────────────────────────────────────────────────────────
 
-function buildHtml(weather, chores, meals, claude) {
-  const byRoom = {};
-  for (const c of chores) {
-    const room = c.room.replace(/\p{Emoji}/gu, '').trim() || 'General';
-    if (!byRoom[room]) byRoom[room] = [];
-    byRoom[room].push(c);
-  }
-
-  const choreHtml = Object.entries(byRoom).map(([room, tasks]) => `
-    <div class="room-label">${room}</div>
-    ${tasks.map(t => `
-      <div class="chore-row${t.done ? ' done' : ''}" onclick="toggle(this)">
-        <div class="chore-check"></div>
-        <div class="chore-text">${t.task}</div>
-      </div>`).join('')}
-  `).join('');
-
-  const total = chores.length;
-  const doneCount = chores.filter(c => c.done).length;
-  const pct = total > 0 ? Math.round(doneCount / total * 100) : 0;
-
+function buildHtml(weather, meals, claude) {
   const mealHtml = meals.length > 0
     ? `<div class="meal-name">${meals.map(m => m.name).join(' + ')}</div>
        <div class="meal-tags">${[...new Set(meals.flatMap(m => m.tags))].slice(0,4).map(t => `<span class="meal-tag">${t}</span>`).join('')}</div>
@@ -183,19 +147,7 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);padd
 .badge{display:inline-flex;align-items:center;gap:4px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--sage);background:var(--sp);border-radius:10px;padding:3px 8px}
 .bdot{width:5px;height:5px;border-radius:50%;background:var(--sage);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.room-label{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--is);padding:8px 0 4px;opacity:.7}
-.room-label:first-child{padding-top:0}
-.chore-row{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:.5px solid var(--div);cursor:pointer;user-select:none}
-.chore-row:last-of-type{border-bottom:none}
-.chore-check{width:17px;height:17px;border-radius:50%;border:1.5px solid var(--sand);flex-shrink:0;transition:all .2s;display:flex;align-items:center;justify-content:center}
-.chore-row.done .chore-check{background:var(--sage);border-color:var(--sage)}
-.chore-row.done .chore-check::after{content:'';width:5px;height:3px;border-left:1.5px solid white;border-bottom:1.5px solid white;transform:rotate(-45deg) translateY(-1px)}
-.chore-text{font-size:13px;color:var(--ink);flex:1;line-height:1.3}
-.chore-row.done .chore-text{color:var(--im);text-decoration:line-through;text-decoration-color:var(--im)}
-.prog{height:3px;background:var(--sand);border-radius:2px;margin-top:.75rem;overflow:hidden}
-.progbar{height:100%;background:var(--sage);border-radius:2px;transition:width .4s}
-.pfoot{display:flex;justify-content:space-between;margin-top:5px}
-.plbl{font-size:10px;color:var(--im);font-weight:300}
+.notion-embed{width:100%;height:600px;border:none;border-radius:14px}
 .meal-card{background:var(--tp);border:.5px solid rgba(196,113,74,.2);border-radius:14px;padding:1rem 1.125rem}
 .meyebrow{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--terracotta);margin-bottom:4px}
 .meal-name{font-family:'Playfair Display',serif;font-size:20px;font-weight:500;color:var(--bark);line-height:1.2;margin-bottom:6px}
@@ -215,10 +167,14 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);padd
 .reyebrow{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--forest);margin-bottom:5px}
 .rtitle{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--bark);line-height:1.35;margin-bottom:5px}
 .rbody{font-size:12px;color:var(--is);line-height:1.5;font-weight:300}
-.footer{margin-top:1.5rem;text-align:center;font-size:10px;color:var(--im);font-weight:300}
+.refresh-btn{display:block;width:calc(100% - 2rem);margin:1.25rem 1rem 0;background:var(--bark);color:#FDF9F4;border:none;border-radius:12px;padding:14px;font-family:'Lato',sans-serif;font-size:13px;font-weight:400;letter-spacing:.5px;cursor:pointer;transition:opacity .2s}
+.refresh-btn:active{opacity:.8}
+.refresh-btn.loading{opacity:.6;cursor:not-allowed}
+.footer{margin-top:1rem;padding:0 1rem;text-align:center;font-size:10px;color:var(--im);font-weight:300}
 </style>
 </head>
 <body>
+
 <div class="header">
   <div class="htop">
     <div>
@@ -246,20 +202,15 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);padd
     <div class="sh">
       <div style="display:flex;align-items:center;gap:8px">
         <div class="sl">Chores · ${todayDay}</div>
-        <div class="badge"><div class="bdot"></div>Notion</div>
+        <div class="badge"><div class="bdot"></div>Live Notion</div>
       </div>
       <a class="nl" href="https://www.notion.so/Weekly-Cleaning-Checklist-343dceb70b9f801b86abffe4b092a172" target="_blank">Open ↗</a>
     </div>
-    ${total > 0 ? `
-    <div class="card">
-      ${choreHtml}
-      <div class="prog"><div class="progbar" id="bar" style="width:${pct}%"></div></div>
-      <div class="pfoot">
-        <div class="plbl" id="lbl">${doneCount} of ${total} complete</div>
-        <div style="font-size:9px;color:var(--im);font-style:italic" id="sync"></div>
-      </div>
-    </div>` : `
-    <div class="card"><p style="font-size:13px;color:var(--im);font-style:italic">No chores today — enjoy your day!</p></div>`}
+    <iframe
+      class="notion-embed"
+      src="https://honored-tangerine-e9d.notion.site/Weekly-Cleaning-Checklist-343dceb70b9f801b86abffe4b092a172"
+      allowfullscreen>
+    </iframe>
   </div>
 
   <div class="section">
@@ -287,18 +238,42 @@ body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--ink);padd
     </div>
   </div>
 
-  <div class="footer">Auto-generated at 6am · ${dateStr}</div>
 </div>
 
+<button class="refresh-btn" id="refreshBtn" onclick="triggerRebuild()">
+  Refresh digest
+</button>
+
+<div class="footer" id="footer">Auto-generated at 6am · ${dateStr}</div>
+
 <script>
-let done = ${doneCount}, total = ${total};
-function toggle(row) {
-  row.classList.toggle('done');
-  done = document.querySelectorAll('.chore-row.done').length;
-  const pct = total > 0 ? Math.round(done/total*100) : 0;
-  document.getElementById('bar').style.width = pct+'%';
-  document.getElementById('lbl').textContent = done+' of '+total+' complete';
-  document.getElementById('sync').textContent = 'open Notion to sync ↗';
+async function triggerRebuild() {
+  const btn = document.getElementById('refreshBtn');
+  const footer = document.getElementById('footer');
+  btn.textContent = 'Rebuilding — check back in ~60 seconds...';
+  btn.classList.add('loading');
+  btn.disabled = true;
+  try {
+    const res = await fetch('https://api.github.com/repos/${GH_REPO}/dispatches', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ${GH_PAT}',
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ event_type: 'manual-refresh' })
+    });
+    if (res.ok) {
+      footer.textContent = 'Rebuild triggered — refresh this page in about 60 seconds';
+    } else {
+      throw new Error('Failed');
+    }
+  } catch {
+    btn.textContent = 'Refresh digest';
+    btn.classList.remove('loading');
+    btn.disabled = false;
+    footer.textContent = 'Refresh failed — try again or visit GitHub Actions';
+  }
 }
 </script>
 </body>
@@ -309,14 +284,10 @@ function toggle(row) {
 
 async function main() {
   console.log(`Generating digest for ${todayDay}...`);
-  const [weather, chores, meals] = await Promise.all([
-    getWeather(),
-    getChores(),
-    getMeals()
-  ]);
-  console.log(`Weather: ${weather.temp}°F, Chores: ${chores.length}, Meals: ${meals.length}`);
+  const [weather, meals] = await Promise.all([getWeather(), getMeals()]);
+  console.log(`Weather: ${weather.temp}°, Meals: ${meals.length}`);
   const claude = await getClaudeContent(meals, weather);
-  const html = buildHtml(weather, chores, meals, claude);
+  const html = buildHtml(weather, meals, claude);
   fs.mkdirSync('./out', { recursive: true });
   fs.writeFileSync('./out/index.html', html);
   console.log('Done.');
